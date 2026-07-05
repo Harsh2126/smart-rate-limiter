@@ -410,11 +410,11 @@
 </div>
 
 <footer>
-  polling every <span>1s</span> &nbsp;·&nbsp; bucket refills continuously &nbsp;·&nbsp; endpoint <span>localhost:8080/api/check</span>
+  polling every <span>1s</span> &nbsp;·&nbsp; bucket refills continuously &nbsp;·&nbsp; endpoint <span>smart-rate-limiter-production.up.railway.app</span>
 </footer>
 
 <script>
-  const API_BASE = 'http://localhost:8080';
+  const API_BASE = 'https://smart-rate-limiter-production-846d.up.railway.app';
   const API_KEY = 'key-abc123'; // backend ke application.properties me set ki hui valid key
   let clients = ['user1', 'user2'];
   let totals = { allowed: 0, blocked: 0 };
