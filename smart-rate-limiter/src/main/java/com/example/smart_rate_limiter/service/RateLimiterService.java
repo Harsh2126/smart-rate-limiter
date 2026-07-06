@@ -1,6 +1,7 @@
 package com.example.smart_rate_limiter.service;
-import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
@@ -25,11 +26,9 @@ public class RateLimiterService {
     public boolean AllowedRequest(String clientId) {
         String tokensKey = "ratelimit:" + clientId + ":tokens";
         String timeKey = "ratelimit:" + clientId + ":lastRefill";
-        String countKey = "ratelimit:" + clientId + ":count";
 
         double tokens = getDouble(tokensKey, MAX_TOKENS);
         long lastRefill = getLong(timeKey, System.currentTimeMillis());
-        int count = getInt(countKey, 0);
 
         long now = System.currentTimeMillis();
         double secondsPassed = (now - lastRefill) / 1000.0;
@@ -38,7 +37,6 @@ public class RateLimiterService {
         boolean allowed;
         if (tokens >= 1.0) {
             tokens -= 1.0;
-            count++;
             allowed = true;
             logger.info("ALLOWED request for client [{}] - tokens remaining: {}", clientId, String.format("%.2f", tokens));
         } else {
@@ -48,7 +46,6 @@ public class RateLimiterService {
 
         redisTemplate.opsForValue().set(tokensKey, String.valueOf(tokens));
         redisTemplate.opsForValue().set(timeKey, String.valueOf(now));
-        redisTemplate.opsForValue().set(countKey, String.valueOf(count));
 
         return allowed;
     }
@@ -56,11 +53,9 @@ public class RateLimiterService {
     public Map<String, Object> getStats(String clientId) {
         String tokensKey = "ratelimit:" + clientId + ":tokens";
         String timeKey = "ratelimit:" + clientId + ":lastRefill";
-        String countKey = "ratelimit:" + clientId + ":count";
 
         double tokens = getDouble(tokensKey, MAX_TOKENS);
         long lastRefill = getLong(timeKey, System.currentTimeMillis());
-        int count = getInt(countKey, 0);
 
         long now = System.currentTimeMillis();
         double secondsPassed = (now - lastRefill) / 1000.0;
@@ -69,9 +64,12 @@ public class RateLimiterService {
         redisTemplate.opsForValue().set(tokensKey, String.valueOf(tokens));
         redisTemplate.opsForValue().set(timeKey, String.valueOf(now));
 
+        // "count" ab tokens consumed dikhata hai (max - remaining), jo naturally refill ke saath ghatta hai
+        int usedTokens = (int) Math.round(MAX_TOKENS - tokens);
+
         Map<String, Object> result = new HashMap<>();
         result.put("clientId", clientId);
-        result.put("count", count);
+        result.put("count", usedTokens);
         result.put("limit", (int) MAX_TOKENS);
         result.put("avgRate", Math.round(tokens * 100.0) / 100.0);
         return result;
@@ -85,10 +83,5 @@ public class RateLimiterService {
     private long getLong(String key, long defaultVal) {
         String val = redisTemplate.opsForValue().get(key);
         return val != null ? Long.parseLong(val) : defaultVal;
-    }
-
-    private int getInt(String key, int defaultVal) {
-        String val = redisTemplate.opsForValue().get(key);
-        return val != null ? Integer.parseInt(val) : defaultVal;
     }
 }
