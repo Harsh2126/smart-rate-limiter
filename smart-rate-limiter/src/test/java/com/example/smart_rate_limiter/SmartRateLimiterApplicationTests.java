@@ -8,6 +8,7 @@ class SmartRateLimiterApplicationTests {
 
 	@Test
 	void contextLoads() {
+	its working fine 
 	}
 
 }
